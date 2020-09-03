@@ -101,7 +101,7 @@ from typing import List, Callable
 
 
 def evaluate(program: List[int], inp: Callable[[], int],
-             out: Callable[[int], None]) -> List[int]:
+             out: Callable[[int], None], more=None) -> List[int]:
     """Evaluate the given program."""
     tape = program[:]
 
@@ -118,7 +118,7 @@ def evaluate(program: List[int], inp: Callable[[], int],
             tape[tape[pos]] = value
         else:
             tape[pos] = value
-    eval_helper(0, tape, inp, read, write, out)
+    eval_helper(0, tape, inp, read, write, out, more=more)
     return tape
 
 
@@ -138,7 +138,7 @@ def analyze(number):
 def eval_helper(pos: int, tape: List[int], inp: Callable[[], int],
                 read: Callable[[int, int], int],
                 write: Callable[[int, int, int], None],
-                out: Callable[[int], None]) -> None:
+                out: Callable[[int], None], more=None) -> None:
     """Evaluate the given program, starting from the given address."""
     instr = analyze(tape[pos])
     opcode = instr["opcode"]
@@ -146,22 +146,25 @@ def eval_helper(pos: int, tape: List[int], inp: Callable[[], int],
         x = read(instr[1], pos + 1)
         y = read(instr[2], pos + 2)
         write(instr[3], pos + 3, x + y)
-        eval_helper(pos + 4, tape, inp, read, write, out)
+        eval_helper(pos + 4, tape, inp, read, write, out, more)
     elif opcode == 2:
         x = read(instr[1], pos + 1)
         y = read(instr[2], pos + 2)
         write(instr[3], pos + 3, x * y)
-        eval_helper(pos + 4, tape, inp, read, write, out)
+        eval_helper(pos + 4, tape, inp, read, write, out, more)
     elif opcode == 3:
         x = inp()
         write(instr[1], pos + 1, x)
-        eval_helper(pos + 2, tape, inp, read, write, out)
+        eval_helper(pos + 2, tape, inp, read, write, out, more)
     elif opcode == 4:
         x = read(instr[1], pos + 1)
         out(x)
-        eval_helper(pos + 2, tape, inp, read, write, out)
+        eval_helper(pos + 2, tape, inp, read, write, out, more)
     elif opcode == 99:
         return
+    elif more is not None:
+        next_pos = more(pos, tape, inp, read, write, out)
+        eval_helper(next_pos, tape, inp, read, write, out, more)
     else:
         raise ValueError(f"unexpected input: {tape[pos]}")
 
