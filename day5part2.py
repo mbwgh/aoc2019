@@ -95,13 +95,16 @@ def additional_instructions(pos, tape, inp, read, write, out):
         return None
 
 
-def evaluate(program):
-    """Evaluate the given program and return its output."""
+def evaluate(program, inp):
+    """
+    Evaluate the given program given an input function and return its output.
+    """
     output = []
-    day5part1.evaluate(program, lambda: 5, output.append,
+    day5part1.evaluate(program, inp, output.append,
                        additional_instructions)
     return output
 
 
 if __name__ == '__main__':
-    print(evaluate([ int(x) for x in open("day5-input").read().split(",")]))
+    print(evaluate([ int(x) for x in open("day5-input").read().split(",")],
+                   lambda: 5))
