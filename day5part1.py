@@ -142,31 +142,32 @@ def eval_helper(pos: int, tape: List[int], inp: Callable[[], int],
     """Evaluate the given program, starting from the given address."""
     instr = analyze(tape[pos])
     opcode = instr["opcode"]
-    if opcode == 1:
-        x = read(instr[1], pos + 1)
-        y = read(instr[2], pos + 2)
-        write(instr[3], pos + 3, x + y)
-        eval_helper(pos + 4, tape, inp, read, write, out, more)
-    elif opcode == 2:
-        x = read(instr[1], pos + 1)
-        y = read(instr[2], pos + 2)
-        write(instr[3], pos + 3, x * y)
-        eval_helper(pos + 4, tape, inp, read, write, out, more)
-    elif opcode == 3:
-        x = inp()
-        write(instr[1], pos + 1, x)
-        eval_helper(pos + 2, tape, inp, read, write, out, more)
-    elif opcode == 4:
-        x = read(instr[1], pos + 1)
-        out(x)
-        eval_helper(pos + 2, tape, inp, read, write, out, more)
-    elif opcode == 99:
-        return
-    elif more is not None:
-        next_pos = more(pos, tape, inp, read, write, out)
-        eval_helper(next_pos, tape, inp, read, write, out, more)
-    else:
-        raise ValueError(f"unexpected input: {tape[pos]}")
+    while opcode != 99:
+        if opcode == 1:
+            x = read(instr[1], pos + 1)
+            y = read(instr[2], pos + 2)
+            write(instr[3], pos + 3, x + y)
+            pos += 4
+        elif opcode == 2:
+            x = read(instr[1], pos + 1)
+            y = read(instr[2], pos + 2)
+            write(instr[3], pos + 3, x * y)
+            pos += 4
+        elif opcode == 3:
+            x = inp()
+            write(instr[1], pos + 1, x)
+            pos += 2
+        elif opcode == 4:
+            x = read(instr[1], pos + 1)
+            out(x)
+            pos += 2
+        elif more is not None:
+            next_pos = more(pos, tape, inp, read, write, out)
+            pos = next_pos
+        else:
+            raise ValueError(f"unexpected input: {tape[pos]}")
+        instr = analyze(tape[pos])
+        opcode = instr["opcode"]
 
 
 def main():
