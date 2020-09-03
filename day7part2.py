@@ -55,3 +55,53 @@ Try every combination of the new phase settings on the amplifier feedback loop.
 What is the highest signal that can be sent to the thrusters?
 
 """
+
+from collections import deque
+from itertools import permutations
+
+from Computer import Computer
+
+
+def test_configuration(phase_settings, program):
+    channels = tuple(deque([setting]) for setting in phase_settings)
+    channels[0].append(0)
+
+    n_machines = len(phase_settings)
+    machines = []
+
+    def make_inp(i):
+        """Return a function that reads from the ith channel."""
+        return channels[i].popleft
+
+    def make_out(i):
+        """Return the out function for machine i."""
+        def out(value):
+            """Write to the next machine's channel and yield."""
+            channel = channels[(i + 1) % n_machines]
+            channel.append(value)
+            return True
+
+        return out
+    for i in range(n_machines):
+        machines.append(Computer(program, make_inp(i), make_out(i)))
+
+    def all_halted():
+        """Returns True if all machines received opcode 99."""
+        return all(m.has_halted() for m in machines)
+
+    while not all_halted():
+        for machine in machines:
+            machine.evaluate()
+
+    return channels[0][0]
+
+
+def main():
+    """Try all possible settings."""
+    program = [int(n) for n in open("day7-input").read().split(",")]
+    print(max(test_configuration(setting, program) for setting in
+              permutations([5, 6, 7, 8, 9])))
+
+
+if __name__ == '__main__':
+    main()
