@@ -163,6 +163,8 @@ def eval_helper(pos: int, tape: List[int], inp: Callable[[], int],
             pos += 2
         elif more is not None:
             next_pos = more(pos, tape, inp, read, write, out)
+            if next_pos is None:
+                raise ValueError(f"unexpected input: {tape[pos]}")
             pos = next_pos
         else:
             raise ValueError(f"unexpected input: {tape[pos]}")
