@@ -77,6 +77,6 @@ if __name__ == '__main__':
         output.append(value)
         return False
 
-    computer = Computer("day9-input", lambda: 1, out)
+    computer = Computer("day9-input", lambda: 2, out)
     computer.evaluate()
     print(output)
