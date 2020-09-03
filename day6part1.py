@@ -76,27 +76,27 @@ from igraph import Graph
 
 def read_input(path):
     """
-    Read the input and return an undirected graph, with edges going from
-    satellite to nucleus.
+    Read the input and return a directed graph, with edges going from
+    satellite to the planet inside the satellite's orbit.
     """
     lines = open(path).read().splitlines()
-    g: Graph = Graph().as_directed()
+    graph: Graph = Graph().as_directed()
     vertices = set()
     for line in lines:
         nucleus, satellite = line.split(")")
         if nucleus not in vertices:
-            g.add_vertex(nucleus)
+            graph.add_vertex(nucleus)
             vertices.add(nucleus)
         if satellite not in vertices:
-            g.add_vertex(satellite)
+            graph.add_vertex(satellite)
             vertices.add(satellite)
-        g.add_edge(satellite, nucleus)
-    return g
+        graph.add_edge(satellite, nucleus)
+    return graph
 
 
-def checksum(g: Graph) -> int:
+def checksum(graph: Graph) -> int:
     """Calculate the checksum."""
-    return g.path_length_hist().n
+    return graph.path_length_hist().n
 
 
 if __name__ == '__main__':
