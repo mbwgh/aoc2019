@@ -74,12 +74,12 @@ What is the total number of direct and indirect orbits in your map data?
 from igraph import Graph
 
 
-def read_input():
+def read_input(path):
     """
     Read the input and return an undirected graph, with edges going from
     satellite to nucleus.
     """
-    lines = open("day6-input").read().splitlines()
+    lines = open(path).read().splitlines()
     g: Graph = Graph().as_directed()
     vertices = set()
     for line in lines:
@@ -100,5 +100,5 @@ def checksum(g: Graph) -> int:
 
 
 if __name__ == '__main__':
-    g = read_input()
+    g = read_input("day6-input")
     print(checksum(g))
