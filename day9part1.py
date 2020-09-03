@@ -66,3 +66,17 @@ no malfunctioning opcodes when run in test mode; it should only output a single
 value, the BOOST keycode. What BOOST keycode does it produce?
 
 """
+
+from Computer import Computer
+
+
+if __name__ == '__main__':
+    output = []
+
+    def out(value):
+        output.append(value)
+        return False
+
+    computer = Computer("day9-input", lambda: 1, out)
+    computer.evaluate()
+    print(output)
