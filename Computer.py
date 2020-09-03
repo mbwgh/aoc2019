@@ -20,14 +20,15 @@ class Computer:
         if isinstance(tape, str):
             if os.path.isfile(tape):
                 tape = open(tape).read()
-            self.memory = [int(n) for n in tape.split(",")]
+            self.memory = {ix: int(n) for ix, n in enumerate(tape.split(","))}
         else:
-            self.memory = list(tape)
+            self.memory = {ix: value for ix, value in enumerate(tape)}
         self.ip = 0
         self.inp = inp
         self.out = out
         self.opcode = None
         self.modes = None
+        self.base = 0
 
     def fetch(self):
         """Update opcode and operation modes."""
@@ -35,23 +36,31 @@ class Computer:
         self.opcode = number % 100
         self.modes = tuple(number // 10**i % 10 for i in (2, 3, 4))
 
+    def get_address(self, offset):
+        """Calculate the address for ``self.read`` and ``self.write``."""
+        mode = self.modes[offset - 1]
+        if mode == 0:
+            return self.memory[self.ip + offset]
+        elif mode == 1:
+            return self.ip + offset
+        else:
+            return self.memory[self.ip + offset] + self.base
+
     def read(self, offset):
         """
-        Read a value either directly or indirectly, depending on the current
-        opcode's modes. The offset is taken as the parameter number of the
-        current instruction as well. For instance, ``offset=1`` refers to the
+        Read a value according to the current mode for the specified offset.
+        The offset is taken as the parameter number of the
+        current instruction. For instance, ``offset=1`` refers to the
         1st parameter, and its mode is taken into consideration.
         :param offset: The offset from the instruction pointer.
-        :return: The value either at ``self.ip + offset`` or at the address.
+        :return: The value either at an address.
         """
-        mode = self.modes[offset - 1]
-        addr = self.memory[self.ip + offset] if mode == 0 else self.ip + offset
-        return self.memory[addr]
+        addr = self.get_address(offset)
+        return self.memory[addr] if addr in self.memory else 0
 
     def write(self, offset, value):
-        """Dually to ``self.read``, write a value directly or indirectly."""
-        mode = self.modes[offset - 1]
-        addr = self.memory[self.ip + offset] if mode == 0 else self.ip + offset
+        """Dually to ``self.read``, write a value according to mode."""
+        addr = self.get_address(offset)
         self.memory[addr] = value
 
     def evaluate(self) -> None:
@@ -97,6 +106,10 @@ class Computer:
                 y = self.read(2)
                 self.write(3, 1 if x == y else 0)
                 self.ip += 4
+            elif self.opcode == 9:
+                x = self.read(1)
+                self.base += x
+                self.ip += 2
             else:
                 raise ValueError(f"unexpected input: {self.memory[self.ip]}")
             self.fetch()
