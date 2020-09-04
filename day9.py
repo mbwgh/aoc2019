@@ -65,18 +65,54 @@ Once your Intcode computer is fully functional, the BOOST program should report
 no malfunctioning opcodes when run in test mode; it should only output a single
 value, the BOOST keycode. What BOOST keycode does it produce?
 
+--- Part Two ---
+
+You now have a complete Intcode computer.
+
+Finally, you can lock on to the Ceres distress signal! You just need to boost
+your sensors using the BOOST program.
+
+The program runs in sensor boost mode by providing the input instruction the
+value 2. Once run, it will boost the sensors automatically, but it might take a
+few seconds to complete the operation on slower hardware. In sensor boost mode,
+the program will output a single value: the coordinates of the distress signal.
+
+Run the BOOST program in sensor boost mode. What are the coordinates of the
+distress signal?
+
 """
 
 from intcode import Computer
+from runner import run
 
 
-if __name__ == '__main__':
+def main1():
+    """Run the test with input 1."""
     output = []
 
     def out(value):
+        """Append to output."""
+        output.append(value)
+        return False
+
+    computer = Computer("day9-input", lambda: 1, out)
+    computer.evaluate()
+    print(output)
+
+
+def main2():
+    """Run the test with input 2."""
+    output = []
+
+    def out(value):
+        """Append to output."""
         output.append(value)
         return False
 
     computer = Computer("day9-input", lambda: 2, out)
     computer.evaluate()
     print(output)
+
+
+if __name__ == '__main__':
+    run(main1, main2)
