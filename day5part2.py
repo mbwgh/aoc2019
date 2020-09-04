@@ -67,8 +67,8 @@ What is the diagnostic code for system ID 5?
 
 """
 
-from day5part1 import analyze
-import day5part1
+from day5 import analyze
+import day5
 
 
 def additional_instructions(pos, tape, inp, read, write, out):
@@ -100,8 +100,8 @@ def evaluate(program, inp):
     Evaluate the given program given an input function and return its output.
     """
     output = []
-    day5part1.evaluate(program, inp, output.append,
-                       additional_instructions)
+    day5.evaluate(program, inp, output.append,
+                  additional_instructions)
     return output
 
 
