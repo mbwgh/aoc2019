@@ -75,11 +75,68 @@ Here are some example programs:
 Try every combination of phase settings on the amplifiers. What is the highest
 signal that can be sent to the thrusters?
 
+--- Part Two ---
+
+It's no good - in this configuration, the amplifiers can't generate a large
+enough output signal to produce the thrust you'll need. The Elves quickly talk
+you through rewiring the amplifiers into a feedback loop:
+
+      O-------O  O-------O  O-------O  O-------O  O-------O
+0 -+->| Amp A |->| Amp B |->| Amp C |->| Amp D |->| Amp E |-.
+   |  O-------O  O-------O  O-------O  O-------O  O-------O |
+   |                                                        |
+   '--------------------------------------------------------+
+                                                            |
+                                                            v
+                                                     (to thrusters)
+
+Most of the amplifiers are connected as they were before; amplifier A's output
+is connected to amplifier B's input, and so on. However, the output from
+amplifier E is now connected into amplifier A's input. This creates the
+feedback loop: the signal will be sent through the amplifiers many times.
+
+In feedback loop mode, the amplifiers need totally different phase settings:
+integers from 5 to 9, again each used exactly once. These settings will cause
+the Amplifier Controller Software to repeatedly take input and produce output
+many times before halting. Provide each amplifier its phase setting at its
+first input instruction; all further input/output instructions are for signals.
+
+Don't restart the Amplifier Controller Software on any amplifier during this
+process. Each one should continue receiving and sending signals until it halts.
+
+All signals sent or received in this process will be between pairs of
+amplifiers except the very first signal and the very last signal. To start the
+process, a 0 signal is sent to amplifier A's input exactly once.
+
+Eventually, the software on the amplifiers will halt after they have processed
+the final loop. When this happens, the last output signal from amplifier E is
+sent to the thrusters. Your job is to find the largest output signal that can
+be sent to the thrusters using the new phase settings and feedback loop
+arrangement.
+
+Here are some example programs:
+
+    Max thruster signal 139629729 (from phase setting sequence 9,8,7,6,5):
+
+    3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,
+    27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5
+
+    Max thruster signal 18216 (from phase setting sequence 9,7,8,5,6):
+
+    3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,
+    -5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,
+    53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10
+
+Try every combination of the new phase settings on the amplifier feedback loop.
+What is the highest signal that can be sent to the thrusters?
+
 """
 
-from day5part2 import evaluate
-
+from collections import deque
 from itertools import permutations
+
+from intcode import Computer
+from runner import run
 
 
 def test_combination(phase_settings, program):
@@ -96,19 +153,71 @@ def test_combination(phase_settings, program):
         inp_pos = (inp_pos + 1) % 2
         return inp_values[inp_pos]
 
+    chan = []
+
+    def out(value):
+        """Append to chan."""
+        chan.append(value)
+        return False
+
     output = 0
-    for i in range(len(phase_settings)):
-        inp_values = (phase_settings[i], output)
-        output = evaluate(program, inp)[0]
+    for setting in phase_settings:
+        inp_values = (setting, output)
+        computer = Computer(program, inp, out)
+        computer.evaluate()
+        output = chan[0]
+        chan = []
     return output
 
 
-def main():
+def main1():
     """Test all phase settings."""
     program = [int(x) for x in open("day7-input").read().split(",")]
     print(max(test_combination(settings, program) for settings in
               permutations(range(5))))
 
 
+def test_configuration(phase_settings, program):
+    """Use the settings until all machines halt and return the final output."""
+    channels = tuple(deque([setting]) for setting in phase_settings)
+    channels[0].append(0)
+
+    n_machines = len(phase_settings)
+    machines = []
+
+    def make_inp(i):
+        """Return a function that reads from the ith channel."""
+        return channels[i].popleft
+
+    def make_out(i):
+        """Return the out function for machine i."""
+        def out(value):
+            """Write to the next machine's channel and yield."""
+            channel = channels[(i + 1) % n_machines]
+            channel.append(value)
+            return True
+
+        return out
+    for num in range(n_machines):
+        machines.append(Computer(program, make_inp(num), make_out(num)))
+
+    def all_halted():
+        """Returns True if all machines received opcode 99."""
+        return all(m.has_halted() for m in machines)
+
+    while not all_halted():
+        for machine in machines:
+            machine.evaluate()
+
+    return channels[0][0]
+
+
+def main2():
+    """Try all possible settings."""
+    program = [int(n) for n in open("day7-input").read().split(",")]
+    print(max(test_configuration(setting, program) for setting in
+              permutations([5, 6, 7, 8, 9])))
+
+
 if __name__ == '__main__':
-    main()
+    run(main1, main2)
