@@ -59,7 +59,7 @@ What is the highest signal that can be sent to the thrusters?
 from collections import deque
 from itertools import permutations
 
-from Computer import Computer
+from intcode import Computer
 
 
 def test_configuration(phase_settings, program):

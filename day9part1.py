@@ -67,7 +67,7 @@ value, the BOOST keycode. What BOOST keycode does it produce?
 
 """
 
-from Computer import Computer
+from intcode import Computer
 
 
 if __name__ == '__main__':

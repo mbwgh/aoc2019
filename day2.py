@@ -132,7 +132,7 @@ answer would be 1202.)
 
 from typing import List
 
-from Computer import Computer
+from intcode import Computer
 from runner import run
 
 
