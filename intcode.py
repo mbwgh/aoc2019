@@ -8,8 +8,10 @@ class Computer:
     """
     An IntCode Computer supporting opcodes 1-8, 99.
     """
-    def __init__(self, tape: Union[Sequence[int], str], inp: Callable[[], int],
-                 out: Callable[[int], bool]):
+
+    def __init__(self, tape: Union[Sequence[int], str],
+                 inp: Callable[[], int] = None,
+                 out: Callable[[int], bool] = None):
         """
         Initialize the Computer without running it yet.
         :param tape: Input file, a program string or the parsed program.
@@ -22,8 +24,8 @@ class Computer:
                 tape = open(tape).read()
             self.memory = {ix: int(n) for ix, n in enumerate(tape.split(","))}
         else:
-            self.memory = {ix: value for ix, value in enumerate(tape)}
-        self.ip = 0
+            self.memory = dict(enumerate(tape))
+        self.iptr = 0
         self.inp = inp
         self.out = out
         self.opcode = None
@@ -32,7 +34,7 @@ class Computer:
 
     def fetch(self):
         """Update opcode and operation modes."""
-        number = self.memory[self.ip]
+        number = self.memory[self.iptr]
         self.opcode = number % 100
         self.modes = tuple(number // 10**i % 10 for i in (2, 3, 4))
 
@@ -40,11 +42,10 @@ class Computer:
         """Calculate the address for ``self.read`` and ``self.write``."""
         mode = self.modes[offset - 1]
         if mode == 0:
-            return self.memory[self.ip + offset]
-        elif mode == 1:
-            return self.ip + offset
-        else:
-            return self.memory[self.ip + offset] + self.base
+            return self.memory[self.iptr + offset]
+        if mode == 1:
+            return self.iptr + offset
+        return self.memory[self.iptr + offset] + self.base
 
     def read(self, offset):
         """
@@ -71,47 +72,47 @@ class Computer:
         self.fetch()
         while self.opcode != 99:
             if self.opcode == 1:
-                x = self.read(1)
-                y = self.read(2)
-                self.write(3, x + y)
-                self.ip += 4
+                arg1 = self.read(1)
+                arg2 = self.read(2)
+                self.write(3, arg1 + arg2)
+                self.iptr += 4
             elif self.opcode == 2:
-                x = self.read(1)
-                y = self.read(2)
-                self.write(3, x * y)
-                self.ip += 4
+                arg1 = self.read(1)
+                arg2 = self.read(2)
+                self.write(3, arg1 * arg2)
+                self.iptr += 4
             elif self.opcode == 3:
-                x = self.inp()
-                self.write(1, x)
-                self.ip += 2
+                arg1 = self.inp()
+                self.write(1, arg1)
+                self.iptr += 2
             elif self.opcode == 4:
-                x = self.read(1)
-                should_yield = self.out(x)
-                self.ip += 2
+                arg1 = self.read(1)
+                should_yield = self.out(arg1)
+                self.iptr += 2
                 if should_yield:
                     return
             elif self.opcode == 5:
-                x = self.read(1)
-                self.ip = self.read(2) if x != 0 else self.ip + 3
+                arg1 = self.read(1)
+                self.iptr = self.read(2) if arg1 != 0 else self.iptr + 3
             elif self.opcode == 6:
-                x = self.read(1)
-                self.ip = self.read(2) if x == 0 else self.ip + 3
+                arg1 = self.read(1)
+                self.iptr = self.read(2) if arg1 == 0 else self.iptr + 3
             elif self.opcode == 7:
-                x = self.read(1)
-                y = self.read(2)
-                self.write(3, 1 if x < y else 0)
-                self.ip += 4
+                arg1 = self.read(1)
+                arg2 = self.read(2)
+                self.write(3, 1 if arg1 < arg2 else 0)
+                self.iptr += 4
             elif self.opcode == 8:
-                x = self.read(1)
-                y = self.read(2)
-                self.write(3, 1 if x == y else 0)
-                self.ip += 4
+                arg1 = self.read(1)
+                arg2 = self.read(2)
+                self.write(3, 1 if arg1 == arg2 else 0)
+                self.iptr += 4
             elif self.opcode == 9:
-                x = self.read(1)
-                self.base += x
-                self.ip += 2
+                arg1 = self.read(1)
+                self.base += arg1
+                self.iptr += 2
             else:
-                raise ValueError(f"unexpected input: {self.memory[self.ip]}")
+                raise ValueError(f"unexpected input: {self.memory[self.iptr]}")
             self.fetch()
 
     def has_halted(self):
