@@ -102,6 +102,8 @@ How many panels does it paint at least once?
 from enum import IntEnum
 
 from intcode import Computer
+from runner import run
+
 
 class Direction(IntEnum):
     """A direction can be used to move or rotate the robot."""
@@ -111,6 +113,7 @@ class Direction(IntEnum):
     RIGHT = 3
 
     def move(self, x, y):
+        """Return the coordinates shifted according to this direction."""
         if self == Direction.UP:
             return x, y + 1
         if self == Direction.LEFT:
@@ -120,30 +123,38 @@ class Direction(IntEnum):
         return x + 1, y
 
     def turn_left(self):
+        """Return a direction that has been rotated to the left."""
         return Direction((self + 1) % 4)
 
     def turn_right(self):
+        """Return a direction that has been rotated to the right."""
         return Direction((((self - 1) % 4) + 4) % 4)
 
 
 class Robot:
     """The hull painting robot."""
-    def __init__(self, program):
+    def __init__(self, program, start_color=0):
         self.position = 0, 0
         self.direction = Direction.UP
-        self.encountered_positions = {}
+        self.encountered_positions = {(0, 0): start_color}
         self.computer_output = []
 
         def out(value):
+            """The function the intcode computer should use for output."""
             self.computer_output.append(value)
             return True
 
         def get_color():
+            """The function the intcode computer should use to read input."""
             return self.encountered_positions.get(self.position, 0)
 
         self.computer = Computer(program, get_color, out)
 
     def run(self):
+        """
+        Keep running the computer until it halts, paint and move according to
+        its output.
+        """
         while not self.computer.has_halted():
             self.computer.evaluate()
             if self.computer.has_halted():
@@ -157,8 +168,37 @@ class Robot:
             self.position = self.direction.move(*self.position)
 
 
+def render(encountered_positions):
+    """Take the robot's result and return a string ready for printing."""
+    min_x = min(x for x, y in encountered_positions.keys())
+    max_x = max(x for x, y in encountered_positions.keys())
+    min_y = min(y for x, y in encountered_positions.keys())
+    max_y = max(y for x, y in encountered_positions.keys())
+
+    tiles = []
+    for i in range(min_x, max_x + 1):
+        row = []
+        for j in range(min_y, max_y + 1):
+            color = encountered_positions.get((i, j), 0)
+            row.append("##" if color else "  ")
+        tiles.append("".join(row))
+
+    return "\n".join(tiles)
+
+
 def main1():
     """Traverse the hull and print the number of encountered positions."""
     robot = Robot("day11-input")
     robot.run()
     print(len(robot.encountered_positions))
+
+
+def main2():
+    """Display the message on the hull."""
+    robot = Robot("day11-input", 1)
+    robot.run()
+    print(render(robot.encountered_positions))
+
+
+if __name__ == '__main__':
+    run(main1, main2)
