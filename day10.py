@@ -140,18 +140,18 @@ def parse_data(data: List[str]) -> np.ndarray:
     n_rows = len(data)
     n_cols = len(data[0])
     array = np.empty((n_rows, n_cols), dtype=np.bool_)
-    for x in range(n_cols):
-        for y in range(n_rows):
-            array[x, y] = data[y][x] == "#"
+    for x in range(n_rows):
+        for y in range(n_cols):
+            array[x, y] = data[x][y] == "#"
 
     return array
 
 
-def square(x_coord, y_coord, radius, x_max, y_max):
+def square(x_coord, y_coord, radius, rows, cols):
     """Yield a square of coordinates, clamped to [(0, 0), (x_max, y_max)]."""
     def emit(x_val, y_val):
         """Yield the coordinate pair if they are within bounds."""
-        if 0 <= x_val <= x_max and 0 <= y_val <= y_max:
+        if 0 <= x_val < rows and 0 <= y_val < cols:
             yield x_val, y_val
 
     y_value = y_coord - radius
@@ -178,11 +178,11 @@ def offset(x1, y1, x2, y2):
     return offset_x // divisor, offset_y // divisor
 
 
-def trajectory(x1, y1, x2, y2, x_max, y_max):
+def trajectory(x1, y1, x2, y2, rows, cols):
     """Yield all coordinates that lie on the plane"""
     offset_x, offset_y = offset(x1, y1, x2, y2)
     x, y = x1, y1
-    while 0 <= x <= x_max and 0 <= y <= y_max:
+    while 0 <= x < rows and 0 <= y < cols:
         yield x, y
         x, y = x + offset_x, y + offset_y
 
@@ -196,19 +196,17 @@ def visibility(x_coord, y_coord, matrix: np.ndarray):
         return 0
 
     rows, cols = matrix.shape
-    x_max = cols - 1
-    y_max = rows - 1
     max_radius = max(matrix.shape) - 1
 
     encountered_coordinates = set()
     number_of_visible_asteroids = 0
     for radius in range(1, max_radius + 1):
-        for x, y in square(x_coord, y_coord, radius, x_max, y_max):
+        for x, y in square(x_coord, y_coord, radius, rows, cols):
             if matrix[x, y]:
                 if (x, y) in encountered_coordinates:
                     continue
-                for traj_x, traj_y in trajectory(x_coord, y_coord, x, y, x_max,
-                                                 y_max):
+                for traj_x, traj_y in trajectory(x_coord, y_coord, x, y, rows,
+                                                 cols):
                     encountered_coordinates.add((traj_x, traj_y))
                 number_of_visible_asteroids += 1
     return number_of_visible_asteroids
