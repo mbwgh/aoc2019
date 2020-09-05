@@ -219,6 +219,8 @@ from typing import List, Tuple
 
 import numpy as np
 
+from runner import run
+
 
 def parse_data(data: List[str]) -> np.ndarray:
     """Given the map data, turn it into a matrix of booleans."""
@@ -333,11 +335,20 @@ def angle(origin_x, origin_y, x_coord, y_coord):
 
 
 def dist(x1, x2, y1, y2):
+    """Calculate the euclidian distance between vectors x and y."""
     return sqrt((x1 - y1)**2 + (x2 - y2)**2)
 
 
 def all_angles(origin_x: int, origin_y: int, matrix: np.ndarray) -> List[
         Tuple[int, int, float]]:
+    """
+    Calculate all the angles from a starting point and return them as
+    values (i, j, [0, 2 pi)).
+    :param origin_x: The x-coordinate of the upward reference axis.
+    :param origin_y: The y-coordinate of the upward reference axis.
+    :param matrix: The asteroids, a matrix of booleans.
+    :return: A list of triples of index i, index j and the angle.
+    """
     rows, cols = matrix.shape
     angles = []
     for i in range(rows):
@@ -354,9 +365,36 @@ def all_angles(origin_x: int, origin_y: int, matrix: np.ndarray) -> List[
 
 
 def max_index(matrix):
+    """Return the index of the asteroid with the highest visibility."""
     visibilities = calc_visibilities(matrix)
     return np.unravel_index(np.argmax(visibilities), visibilities.shape)
 
 
+def resort(angles):
+    """Sort the angles returned by ``all_angles`` in destruction order."""
+    result = []
+    while len(result) != len(angles):
+        encountered_angles = set()
+        for i, j, rad in angles:
+            if rad in encountered_angles or (i, j, rad) in result:
+                continue
+            result.append((i, j, rad))
+            encountered_angles.add(rad)
+    return result
+
+
+def main2():
+    """
+    Print 100 * x + y of the x, y coordinates of the 200th destroyed asteroid.
+    """
+    data = open("day10-input").read().splitlines()
+    mat = parse_data(data)
+    i, j = max_index(mat)
+    angles = all_angles(i, j, mat)
+    angles = resort(angles)
+    result_x, result_y = angles[199][1], angles[199][0]
+    print(result_x * 100 + result_y)
+
+
 if __name__ == '__main__':
-    main1()
+    run(main1, main2)
