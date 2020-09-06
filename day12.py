@@ -211,7 +211,12 @@ scan for 1000 steps?
 
 """
 
+from copy import deepcopy
+from itertools import count
+from math import gcd
 import re
+
+from runner import run
 
 
 def read_input(data: str):
@@ -266,3 +271,64 @@ def main1():
         apply_gravity(world)
         apply_velocity(world)
     print(total_energy(world))
+
+
+def lcm3(a, b, c):
+    """Return the least common multiple."""
+    def lcm2(x, y):
+        """Least common multiple of two."""
+        return x * y // gcd(x, y)
+    return lcm2(a, lcm2(b, c))
+
+
+def step_axis(n_axis, world):
+    """Apply gravity and velocity for x(0), y(1) or z(2) axis only."""
+    for i, moon in enumerate(world):
+        p, vp = world[i][n_axis], world[i][n_axis + 3]
+        for j in range(i + 1, len(world)):
+            q, vq = world[j][n_axis], world[j][n_axis + 3]
+            vp, vq = adjust_velocity(p, q, vp, vq)
+            world[j][n_axis + 3] = vq
+        world[i][n_axis + 3] = vp
+
+    for moon in world:
+        moon[n_axis] += moon[n_axis + 3]
+
+
+def axis_equal(n_axis, world1, world2):
+    """Return true, if both worlds are equal along the given axis."""
+    for m1, m2 in zip(world1, world2):
+        if (m1[n_axis], m1[n_axis + 3]) != (m2[n_axis], m2[n_axis + 3]):
+            return False
+    return True
+
+
+def period_for_axis(n_axis, world):
+    """Return the number of iterations it takes for this axis to repeat."""
+    original = deepcopy(world)
+
+    iterations = 1
+    for n in count():
+        step_axis(n_axis, world)
+        if axis_equal(n_axis, world, original):
+            iterations += n
+            break
+    return iterations
+
+
+def main2():
+    """Determine the period for each axis, then calculate the lcm."""
+    world = read_input(open("day12-input").read())
+
+    nx = period_for_axis(0, world)
+    print(f"x-axis repeats after {nx} iterations.")
+    ny = period_for_axis(1, world)
+    print(f"y-axis repeats after {ny} iterations.")
+    nz = period_for_axis(2, world)
+    print(f"z-axis repeats after {nz} iterations.")
+
+    print(f"Least common multiple: {lcm3(nx, ny, nz)}.")
+
+
+if __name__ == '__main__':
+    run(main1, main2)
