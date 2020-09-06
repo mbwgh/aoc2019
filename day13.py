@@ -29,9 +29,33 @@ ball tile (6 tiles from the left and 5 tiles from the top).
 
 Start the game. How many block tiles are on the screen when the game exits?
 
+--- Part Two ---
+
+The game didn't run because you didn't put in any quarters. Unfortunately, you
+did not bring any quarters. Memory address 0 represents the number of quarters
+that have been inserted; set it to 2 to play for free.
+
+The arcade cabinet has a joystick that can move left and right. The software
+reads the position of the joystick with input instructions:
+
+    If the joystick is in the neutral position, provide 0.
+    If the joystick is tilted to the left, provide -1.
+    If the joystick is tilted to the right, provide 1.
+
+The arcade cabinet also has a segment display capable of showing a single
+number that represents the player's current score. When three output
+instructions specify X=-1, Y=0, the third output instruction is not a tile; the
+value instead specifies the new score to show in the segment display. For
+example, a sequence of output values like -1,0,12345 would show 12345 as the
+player's current score.
+
+Beat the game by breaking all the blocks. What is your score after the last
+block is broken?
+
 """
 
 from intcode import Computer
+from runner import run
 
 
 def draw_tile(tile_id):
@@ -84,3 +108,55 @@ def main1():
             if tile == "+":
                 num_blocks += 1
     print(f"{num_blocks} blocks.")
+
+
+def main2():
+    """Beat the game automatically and print the final score."""
+
+    output = []
+    joystick = 0
+    paddle_x_pos = None
+    ball_x_pos = None
+    score = 0
+
+    def inp():
+        """Return the current joystick position."""
+        return joystick
+
+    def out(value):
+        """Wait until a triple has been read, then adjust position/joystick."""
+        nonlocal paddle_x_pos
+        nonlocal ball_x_pos
+        nonlocal joystick
+        nonlocal output
+        nonlocal score
+        output.append(value)
+        if len(output) == 3:
+            i, j, tile_id = output
+            output = []
+            if i == -1 and j == 0:
+                score = tile_id
+            elif tile_id == 3:
+                paddle_x_pos = i
+            elif tile_id == 4:
+                ball_x_pos = i
+
+        if paddle_x_pos and ball_x_pos:
+            if paddle_x_pos < ball_x_pos:
+                joystick = 1
+            elif paddle_x_pos > ball_x_pos:
+                joystick = -1
+            else:
+                joystick = 0
+
+        return False
+
+    computer = Computer("day13-input", inp, out)
+    computer.memory[0] = 2
+    computer.evaluate()
+
+    print(score)
+
+
+if __name__ == '__main__':
+    run(main1, main2)
