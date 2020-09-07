@@ -197,17 +197,21 @@ def calculate_necessary_ore(parsed_input):
         if compound_name == "ORE":
             nonlocal ore_produced
             ore_produced += amount_requested
-            inventory["ORE"] += amount_requested
+            return amount_requested
         else:
             process_yield, ingredients = recipes[compound_name]
             for amount_required, ingredient_name in ingredients:
                 amount_available = inventory[ingredient_name]
-                while amount_available < amount_required:
+                if inventory[ingredient_name] < amount_required:
                     diff = amount_required - amount_available
-                    produce_compound(diff, ingredient_name)
-                    amount_available = inventory[ingredient_name]
+                    inventory[ingredient_name] += \
+                        produce_compound(diff, ingredient_name)
                 inventory[ingredient_name] -= amount_required
             inventory[compound_name] += process_yield
+            if process_yield < amount_requested:
+                diff = amount_requested - process_yield
+                return process_yield + produce_compound(diff, compound_name)
+            return process_yield
 
     produce_compound(1, "FUEL")
     return ore_produced
