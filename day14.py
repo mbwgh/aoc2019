@@ -201,3 +201,26 @@ def main1():
     """Print the amount of necessary ore for one unit of fuel."""
     inp = parse_input(open("day14-input").read())
     print(calculate_fuel_costs(1, make_dependency_graph(inp)))
+
+
+def bisect(inp):
+    """Given the problem input, return the amount of producible fuel."""
+    graph = make_dependency_graph(parse_input(inp))
+    ore_reserves = 1000000000000
+    upper_limit = ore_reserves
+    lower_limit = 1
+    amount = (upper_limit + lower_limit) // 2
+    while upper_limit > lower_limit:
+        ore_costs = calculate_fuel_costs(amount, graph)
+        if ore_costs > ore_reserves:
+            upper_limit = amount - 1
+        elif ore_costs < ore_reserves:
+            lower_limit = amount + 1
+        amount = (upper_limit + lower_limit) // 2
+
+    return amount
+
+
+def main2():
+    """Print how much fuel can be produced from the given ore reserves."""
+    print(bisect(open("day14-input").read()))
