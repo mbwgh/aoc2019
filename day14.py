@@ -116,8 +116,10 @@ ORE required to produce exactly 1 FUEL?
 
 """
 
+from igraph import Graph
+from collections import Counter
 import re
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 
 def parse_input(inp: str) -> List[
@@ -156,68 +158,46 @@ def parse_input(inp: str) -> List[
     return result
 
 
-def make_recipes(raw_data) -> Dict[str, Tuple[int, List[Tuple[int, str]]]]:
+def make_dependency_graph(raw_data):
     """
-    Given the parsed input, return a map with names of producible compounds
-    as keys, and pairs as output. The first component of the pair is the
-    number of produced target component. The second component is a list of
-    pairs, where the first component is the required ingredient amount, and
-    the second component is the ingredient name.
-
-    Note that this means that the result will not include an 'ORE' key.
+    Create a graph where vertices are materials and a directed edge (v, w)
+    indicates that v requires w.
     """
-    result = {}
-    for inputs, (amount, compound) in raw_data:
-        result[compound] = (amount, inputs)
-    return result
+    graph: Graph = Graph().as_directed()
+    inserted = set()
+    for ingredients, (produced_amount, compound_name) in raw_data:
+        if compound_name not in inserted:
+            graph.add_vertex(compound_name)
+            inserted.add(compound_name)
+        for required_amount, ingredient_name in ingredients:
+            if ingredient_name not in inserted:
+                graph.add_vertex(ingredient_name)
+                inserted.add(ingredient_name)
+            graph.add_edge(compound_name, ingredient_name,
+                           recipe_ingredient_amount=required_amount,
+                           recipe_output_amount=produced_amount)
+    return graph
 
 
-def make_inventory(recipes):
-    """
-    Return a dict with compound names as keys, and number of currently held
-    items as value.
-    """
-    result = {name: 0 for name in recipes.keys()}
-    result["ORE"] = 0
-    return result
-
-
-def calculate_necessary_ore(parsed_input):
-    """Return the amount of ore necessary for one unit of fuel."""
-    recipes = make_recipes(parsed_input)
-    inventory = make_inventory(recipes)
-    ore_produced = 0
-
-    def produce_compound(amount_requested, compound_name):
-        """
-        Try to produce as little of the requested compound as necessary,
-        and recursively produce ingredients as needed.
-        The final result will be written to ``ore_produced``.
-        """
-        if compound_name == "ORE":
-            nonlocal ore_produced
-            ore_produced += amount_requested
-            return amount_requested
-        else:
-            process_yield, ingredients = recipes[compound_name]
-            for amount_required, ingredient_name in ingredients:
-                amount_available = inventory[ingredient_name]
-                if inventory[ingredient_name] < amount_required:
-                    diff = amount_required - amount_available
-                    inventory[ingredient_name] += \
-                        produce_compound(diff, ingredient_name)
-                inventory[ingredient_name] -= amount_required
-            inventory[compound_name] += process_yield
-            if process_yield < amount_requested:
-                diff = amount_requested - process_yield
-                return process_yield + produce_compound(diff, compound_name)
-            return process_yield
-
-    produce_compound(1, "FUEL")
-    return ore_produced
+def calculate_fuel_costs(required_fuel, graph: Graph):
+    """Calculate the number of ore required for the given amount of fuel."""
+    producible_components = graph.topological_sorting()[:-1]
+    required = Counter()
+    required["FUEL"] = required_fuel
+    for compound_id in producible_components:
+        compound_name = graph.vs["name"][compound_id]
+        for edge in graph.es.select(_source=compound_id):
+            ingredient_name = graph.vs["name"][edge.target]
+            recipe_output_amount = edge["recipe_output_amount"]
+            recipe_ingredient_amount = edge["recipe_ingredient_amount"]
+            required_output = required[compound_name]
+            factor = required_output // recipe_output_amount \
+                + (1 if required_output % recipe_output_amount else 0)
+            required[ingredient_name] += factor * recipe_ingredient_amount
+    return required["ORE"]
 
 
 def main1():
     """Print the amount of necessary ore for one unit of fuel."""
     inp = parse_input(open("day14-input").read())
-    print(calculate_necessary_ore(inp))
+    print(calculate_fuel_costs(1, make_dependency_graph(inp)))
